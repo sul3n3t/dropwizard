@@ -4,6 +4,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.yammer.dropwizard.jetty.CertificateLoginService;
 import com.yammer.dropwizard.jetty.BiDiGzipHandler;
 import com.yammer.dropwizard.jetty.InstrumentedSslSelectChannelConnector;
 import com.yammer.dropwizard.jetty.InstrumentedSslSocketConnector;
@@ -23,6 +24,7 @@ import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.security.authentication.ClientCertAuthenticator;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
@@ -142,7 +144,7 @@ public class ServerFactory {
         connector.setResponseHeaderSize((int) config.getResponseHeaderBufferSize().toBytes());
 
         connector.setReuseAddress(config.isReuseAddressEnabled());
-        
+
         final Optional<Duration> lingerTime = config.getSoLingerTime();
 
         if (lingerTime.isPresent()) {
@@ -204,6 +206,14 @@ public class ServerFactory {
         for (String password : config.getSslConfiguration().getKeyManagerPassword().asSet()) {
             factory.setKeyManagerPassword(password);
         }
+
+        for (String path : config.getSslConfiguration().getTrustStorePath().asSet()) {
+            factory.setTrustStore(path);
+        }
+
+        for (String password : config.getSslConfiguration().getTrustStorePassword().asSet()) {
+            factory.setTrustStorePassword(password);
+        }
     }
 
 
@@ -264,6 +274,29 @@ public class ServerFactory {
 
     }
 
+    private SecurityHandler clientCertHandler() {
+
+        final CertificateLoginService loginService = new CertificateLoginService();
+
+        final Constraint constraint = new Constraint();
+        constraint.setName(Constraint.__CERT_AUTH);
+        constraint.setRoles(new String[] {"user"});
+        constraint.setAuthenticate(true);
+
+        final ConstraintMapping constraintMapping = new ConstraintMapping();
+        constraintMapping.setConstraint(constraint);
+        constraintMapping.setPathSpec("/*");
+
+        final ConstraintSecurityHandler csh = new ConstraintSecurityHandler();
+        csh.setAuthenticator(new ClientCertAuthenticator());
+        csh.setRealmName("client-cert");
+        csh.addConstraintMapping(constraintMapping);
+        csh.setLoginService(loginService);
+
+        return csh;
+
+    }
+
     private Handler createExternalServlet(ImmutableMap<String, ServletHolder> servlets,
                                           ImmutableMultimap<String, FilterHolder> filters,
                                           ImmutableSet<EventListener> listeners) {
@@ -286,7 +319,7 @@ public class ServerFactory {
         for (Map.Entry<String, String> entry : config.getContextParameters().entrySet()) {
             handler.setInitParameter( entry.getKey(), entry.getValue() );
         }
-        
+
         handler.setConnectorNames(new String[]{"main"});
 
         return wrapHandler(handler);

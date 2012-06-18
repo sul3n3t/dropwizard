@@ -13,6 +13,15 @@ public class SslConfiguration {
     @JsonProperty
     protected String keyManagerPassword = null;
 
+    @JsonProperty
+    protected boolean acceptsClientCertificates = false;
+
+    @JsonProperty
+    protected String trustStorePath = null;
+
+    @JsonProperty
+    protected String trustStorePassword = null;
+
     public Optional<String> getKeyStorePath() {
         return Optional.fromNullable(keyStorePath);
     }
@@ -23,5 +32,17 @@ public class SslConfiguration {
 
     public Optional<String> getKeyManagerPassword() {
         return Optional.fromNullable(keyManagerPassword);
+    }
+
+    public boolean isAcceptsClientCertificates() {
+        return acceptsClientCertificates;
+    }
+
+    public Optional<String> getTrustStorePath() {
+        return Optional.fromNullable(trustStorePath);
+    }
+
+    public Optional<String> getTrustStorePassword() {
+        return Optional.fromNullable(trustStorePassword);
     }
 }
