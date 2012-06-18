@@ -1,5 +1,6 @@
 package com.yammer.dropwizard.config;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.sun.jersey.api.core.ResourceConfig;
@@ -20,6 +21,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.annotation.Nullable;
 import javax.servlet.Filter;
@@ -55,6 +57,7 @@ public class Environment extends AbstractLifeCycle {
     private final ImmutableSet.Builder<EventListener> servletListeners;
     private final ImmutableSet.Builder<Task> tasks;
     private final AggregateLifeCycle lifeCycle;
+    private SslContextFactory sslContextFactory;
 
     /**
      * Creates a new environment.
@@ -462,6 +465,14 @@ public class Environment extends AbstractLifeCycle {
 
     private MethodList annotatedMethods(Class<?> resource) {
         return new MethodList(resource, true).hasMetaAnnotation(HttpMethod.class);
+    }
+
+    public Optional<SslContextFactory> getSslContextFactory() {
+        return Optional.fromNullable(sslContextFactory);
+    }
+
+    public void setSslContextFactory(SslContextFactory sslContextFactory) {
+        this.sslContextFactory = sslContextFactory;
     }
 
     public AbstractService<?> getService() {

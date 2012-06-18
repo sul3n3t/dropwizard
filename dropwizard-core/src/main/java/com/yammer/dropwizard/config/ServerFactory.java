@@ -55,11 +55,13 @@ public class ServerFactory {
 
     private final HttpConfiguration config;
     private final RequestLogHandlerFactory requestLogHandlerFactory;
+    private final SslContextFactory sslContextFactory;
 
-    public ServerFactory(HttpConfiguration config, String name) {
+    public ServerFactory(HttpConfiguration config, String name, SslContextFactory sslContextFactory) {
         this.config = config;
         this.requestLogHandlerFactory = new RequestLogHandlerFactory(config.getRequestLogConfiguration(),
                                                                      name);
+        this.sslContextFactory = sslContextFactory;
     }
 
     public Server buildServer(Environment env) throws ConfigurationException {
@@ -163,13 +165,13 @@ public class ServerFactory {
                 connector = new InstrumentedSocketConnector(port);
                 break;
             case SOCKET_SSL:
-                connector = new InstrumentedSslSocketConnector(port);
+                connector = new InstrumentedSslSocketConnector(sslContextFactory, port);
                 break;
             case SELECT_CHANNEL:
                 connector = new InstrumentedSelectChannelConnector(port);
                 break;
             case SELECT_CHANNEL_SSL:
-                connector = new InstrumentedSslSelectChannelConnector(port);
+                connector = new InstrumentedSslSelectChannelConnector(sslContextFactory, port);
                 break;
             default:
                 throw new IllegalStateException("Invalid connector type: " + config.getConnectorType());

@@ -9,6 +9,7 @@ import com.yammer.dropwizard.config.ServerFactory;
 import com.yammer.dropwizard.logging.Log;
 import org.apache.commons.cli.CommandLine;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import java.io.IOException;
 
@@ -47,8 +48,11 @@ public class ServerCommand<T extends Configuration> extends ConfiguredCommand<T>
                        CommandLine params) throws Exception {
         final Environment environment = new Environment(service, configuration);
         service.initializeWithBundles(configuration, environment);
+        final SslContextFactory factory = environment.getSslContextFactory()
+                                                     .or(new SslContextFactory());
         final Server server = new ServerFactory(configuration.getHttpConfiguration(),
-                                                service.getName()).buildServer(environment);
+                                                service.getName(),
+                                                factory).buildServer(environment);
         final Log log = Log.forClass(ServerCommand.class);
         logBanner(service, log);
         try {
