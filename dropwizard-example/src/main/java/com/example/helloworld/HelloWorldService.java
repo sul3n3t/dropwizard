@@ -49,6 +49,9 @@ public class HelloWorldService extends Service<HelloWorldConfiguration> {
 
         environment.addResource(new PeopleResource(peopleDAO));
         environment.addResource(new PersonResource(peopleDAO));
+
+        //SslContextFactory scf = new TlsContextFactory(configuration.getTls(), null);
+        //environment.setSslContextFactory(scf);
     }
 
 }

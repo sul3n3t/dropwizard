@@ -85,7 +85,7 @@ public class Environment extends AbstractLifeCycle {
         this.servletListeners = ImmutableSet.builder();
         this.tasks = ImmutableSet.builder();
         this.lifeCycle = new AggregateLifeCycle();
-        
+
         final HttpServlet jerseyContainer = service.getJerseyContainer(config, configuration);
         if (jerseyContainer != null) {
             addServlet(jerseyContainer, configuration.getHttpConfiguration().getRootPath()).setInitOrder(Integer.MAX_VALUE);
@@ -251,18 +251,18 @@ public class Environment extends AbstractLifeCycle {
 
     /**
      * Add one or more servlet event listeners.
-     * 
+     *
      * @param listeners one or more listener instances that implement
-     *                  {@link javax.servlet.ServletContextListener}, 
-     *                  {@link javax.servlet.ServletContextAttributeListener}, 
-     *                  {@link javax.servlet.ServletRequestListener} or 
+     *                  {@link javax.servlet.ServletContextListener},
+     *                  {@link javax.servlet.ServletContextAttributeListener},
+     *                  {@link javax.servlet.ServletRequestListener} or
      *                  {@link javax.servlet.ServletRequestAttributeListener}
-     * 
+     *
      */
     public void addServletListeners(EventListener... listeners) {
         this.servletListeners.add( listeners );
     }
-    
+
     /**
      * Adds a {@link Task} instance.
      *
@@ -387,7 +387,7 @@ public class Environment extends AbstractLifeCycle {
     ImmutableSet<EventListener> getServletListeners() {
         return servletListeners.build();
     }
-    
+
     private void logManagedObjects() {
         final ImmutableSet.Builder<String> builder = ImmutableSet.builder();
         for (Object bean : lifeCycle.getBeans()) {

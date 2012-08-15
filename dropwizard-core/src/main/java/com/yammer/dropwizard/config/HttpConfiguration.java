@@ -2,6 +2,7 @@ package com.yammer.dropwizard.config;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
+import com.yammer.dropwizard.tls.TlsConfiguration;
 import com.yammer.dropwizard.util.Duration;
 import com.yammer.dropwizard.util.Size;
 import com.yammer.dropwizard.validation.ValidationMethod;
@@ -29,12 +30,12 @@ public class HttpConfiguration {
 
     @Valid
     @JsonProperty
-    protected SslConfiguration ssl = null;
+    protected TlsConfiguration tls = null;
 
     @NotNull
     @JsonProperty
     protected ImmutableMap<String, String> contextParameters = ImmutableMap.of();
-    
+
     public enum ConnectorType {
         SOCKET,
         BLOCKING_CHANNEL,
@@ -66,7 +67,7 @@ public class HttpConfiguration {
     @NotNull
     @JsonProperty
     protected String rootPath = "/*";
-    
+
     @NotNull
     @Pattern(regexp = "^(blocking|nonblocking|nonblocking\\+ssl|legacy|legacy\\+ssl)$",
              flags = {Pattern.Flag.CASE_INSENSITIVE})
@@ -152,7 +153,7 @@ public class HttpConfiguration {
     @ValidationMethod(message = "must have an SSL configuration when using SSL connection")
     public boolean isSslConfigured() {
         final ConnectorType type = getConnectorType();
-        return !((ssl == null) && ((type == ConnectorType.SOCKET_SSL) ||
+        return !((tls == null) && ((type == ConnectorType.SOCKET_SSL) ||
                                    (type == ConnectorType.SELECT_CHANNEL_SSL)));
     }
 
@@ -160,7 +161,7 @@ public class HttpConfiguration {
     public boolean isThreadPoolSizedCorrectly() {
         return minThreads <= maxThreads;
     }
-    
+
     @ValidationMethod(message = "must have adminUsername if adminPassword is defined")
     public boolean isAdminUsernameDefined() {
         return (adminPassword == null) || (adminUsername != null);
@@ -174,14 +175,14 @@ public class HttpConfiguration {
         return gzip;
     }
 
-    public SslConfiguration getSslConfiguration() {
-        return ssl;
+    public TlsConfiguration getTlsConfiguration() {
+        return tls;
     }
 
     public ImmutableMap<String, String> getContextParameters() {
         return contextParameters;
     }
-    
+
     public ConnectorType getConnectorType() {
         if ("blocking".equalsIgnoreCase(connectorType)) {
             return ConnectorType.BLOCKING_CHANNEL;

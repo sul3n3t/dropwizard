@@ -24,6 +24,7 @@
         <module>dropwizard-example</module>
         <module>dropwizard-views</module>
         <module>dropwizard-testing</module>
+        <module>dropwizard-tls</module>
         <module>dropwizard-scala_2.9.1</module>
     </modules>
 

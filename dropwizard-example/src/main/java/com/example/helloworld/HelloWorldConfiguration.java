@@ -3,6 +3,7 @@ package com.example.helloworld;
 import com.example.helloworld.core.Template;
 import com.yammer.dropwizard.config.Configuration;
 import com.yammer.dropwizard.db.DatabaseConfiguration;
+import com.yammer.dropwizard.tls.TlsConfiguration;
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.hibernate.validator.constraints.NotEmpty;
 
@@ -14,9 +15,13 @@ public class HelloWorldConfiguration extends Configuration {
 
     @NotEmpty
     private String template;
-    
+
     @NotEmpty
     private String defaultName = "Stranger";
+
+    @NotNull
+    @JsonProperty
+    private TlsConfiguration tls = new TlsConfiguration();
 
     @Valid
     @NotNull
@@ -29,6 +34,10 @@ public class HelloWorldConfiguration extends Configuration {
 
     public String getDefaultName() {
         return defaultName;
+    }
+
+    public TlsConfiguration getTls() {
+        return tls;
     }
 
     public Template buildTemplate() {

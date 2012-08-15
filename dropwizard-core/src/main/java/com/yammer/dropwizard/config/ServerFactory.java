@@ -10,6 +10,7 @@ import com.yammer.dropwizard.jetty.UnbrandedErrorHandler;
 import com.yammer.dropwizard.logging.Log;
 import com.yammer.dropwizard.servlets.ThreadNameFilter;
 import com.yammer.dropwizard.tasks.TaskServlet;
+import com.yammer.dropwizard.tls.TlsContextFactory;
 import com.yammer.dropwizard.util.Duration;
 import com.yammer.dropwizard.util.Size;
 import com.yammer.metrics.HealthChecks;
@@ -47,18 +48,19 @@ import java.util.EventListener;
 import java.util.Map;
 
 // TODO: 11/7/11 <coda> -- document ServerFactory
-// TODO: 11/7/11 <coda> -- document ServerFactory
 
 public class ServerFactory {
     private static final Log LOG = Log.forClass(ServerFactory.class);
 
     private final HttpConfiguration config;
     private final RequestLogHandlerFactory requestLogHandlerFactory;
+    private final SslContextFactory sslContextFactory;
 
     public ServerFactory(HttpConfiguration config, String name) {
         this.config = config;
         this.requestLogHandlerFactory = new RequestLogHandlerFactory(config.getRequestLogConfiguration(),
                                                                      name);
+        this.sslContextFactory = new SslContextFactory();
     }
 
     public Server buildServer(Environment env) throws ConfigurationException {
@@ -69,16 +71,23 @@ public class ServerFactory {
 
         if (env.getHealthChecks().isEmpty()) {
             LOG.warn('\n' +
-                             "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" +
-                             "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" +
-                             "!    THIS SERVICE HAS NO HEALTHCHECKS. THIS MEANS YOU WILL NEVER KNOW IF IT    !\n" +
-                             "!    DIES IN PRODUCTION, WHICH MEANS YOU WILL NEVER KNOW IF YOU'RE LETTING     !\n" +
-                             "!     YOUR USERS DOWN. YOU SHOULD ADD A HEALTHCHECK FOR EACH DEPENDENCY OF     !\n" +
-                             "!     YOUR SERVICE WHICH FULLY (BUT LIGHTLY) TESTS YOUR SERVICE'S ABILITY TO   !\n" +
-                             "!      USE THAT SERVICE. THINK OF IT AS A CONTINUOUS INTEGRATION TEST.         !\n" +
-                             "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" +
-                             "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-            );
+                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+                    +
+                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+                    +
+                    "!    THIS SERVICE HAS NO HEALTHCHECKS. THIS MEANS YOU WILL NEVER KNOW IF IT    !\n"
+                    +
+                    "!    DIES IN PRODUCTION, WHICH MEANS YOU WILL NEVER KNOW IF YOU'RE LETTING     !\n"
+                    +
+                    "!     YOUR USERS DOWN. YOU SHOULD ADD A HEALTHCHECK FOR EACH DEPENDENCY OF     !\n"
+                    +
+                    "!     YOUR SERVICE WHICH FULLY (BUT LIGHTLY) TESTS YOUR SERVICE'S ABILITY TO   !\n"
+                    +
+                    "!      USE THAT SERVICE. THINK OF IT AS A CONTINUOUS INTEGRATION TEST.         !\n"
+                    +
+                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+                    +
+                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         }
 
         final Server server = createServer();
@@ -139,7 +148,7 @@ public class ServerFactory {
         connector.setResponseHeaderSize((int) config.getResponseHeaderBufferSize().toBytes());
 
         connector.setReuseAddress(config.isReuseAddressEnabled());
-        
+
         final Optional<Duration> lingerTime = config.getSoLingerTime();
 
         if (lingerTime.isPresent()) {
@@ -162,20 +171,20 @@ public class ServerFactory {
                 connector = new InstrumentedSocketConnector(port);
                 break;
             case SOCKET_SSL:
-                connector = new InstrumentedSslSocketConnector(port);
+                connector = (sslContextFactory != null) ?
+                        new InstrumentedSslSocketConnector(sslContextFactory, port) :
+                        new InstrumentedSslSocketConnector(port);
                 break;
             case SELECT_CHANNEL:
                 connector = new InstrumentedSelectChannelConnector(port);
                 break;
             case SELECT_CHANNEL_SSL:
-                connector = new InstrumentedSslSelectChannelConnector(port);
+                connector = (sslContextFactory != null) ?
+                        new InstrumentedSslSelectChannelConnector(sslContextFactory, port) :
+                        new InstrumentedSslSelectChannelConnector(port);
                 break;
             default:
                 throw new IllegalStateException("Invalid connector type: " + config.getConnectorType());
-        }
-
-        if (connector instanceof SslConnector) {
-            configureSslContext(((SslConnector) connector).getSslContextFactory());
         }
 
         if (connector instanceof SelectChannelConnector) {
@@ -188,27 +197,6 @@ public class ServerFactory {
 
         return connector;
     }
-
-    private void configureSslContext(SslContextFactory factory) {
-        for (String path : config.getSslConfiguration().getKeyStorePath().asSet()) {
-            factory.setKeyStorePath(path);
-        }
-
-        for (String password : config.getSslConfiguration().getKeyStorePassword().asSet()) {
-            factory.setKeyStorePassword(password);
-        }
-
-        for (String password : config.getSslConfiguration().getKeyManagerPassword().asSet()) {
-            factory.setKeyManagerPassword(password);
-        }
-
-        for (String type : config.getSslConfiguration().getKeyStoreType().asSet()) {
-          factory.setKeyStoreType(type);
-        }
-
-        factory.setIncludeProtocols(config.getSslConfiguration().getSupportedProtocols());
-    }
-
 
     private Handler createHandler(Environment env) {
         final HandlerCollection collection = new HandlerCollection();
